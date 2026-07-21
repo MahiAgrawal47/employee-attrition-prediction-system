@@ -103,7 +103,7 @@ Employee-Attrition-Prediction/
 ### Clone Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/Employee-Attrition-Prediction.git
+git clone https://github.com/MahiAgrawal47/employee-attrition-prediction-system.git
 
 cd Employee-Attrition-Prediction
 ```
