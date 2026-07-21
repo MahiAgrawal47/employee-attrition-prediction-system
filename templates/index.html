@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Attrition Prediction</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6;
+            color: #2c3e50;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .header-section {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 3.5rem 0;
+            margin-bottom: 2.5rem;
+            border-radius: 0 0 25px 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        .tech-badges .badge {
+            font-size: 0.85rem;
+            padding: 0.5em 0.8em;
+            margin: 0.2rem;
+            background-color: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.4);
+            font-weight: 500;
+        }
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+            margin-bottom: 25px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            padding: 1.25rem 1.5rem;
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: #1e3c72;
+        }
+        .card-body {
+            padding: 1.75rem;
+        }
+        .form-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+        .form-control, .form-select {
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            border: 1px solid #ced4da;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+        .form-control:focus, .form-select:focus {
+            box-shadow: 0 0 0 0.25rem rgba(30, 60, 114, 0.15);
+            border-color: #2a5298;
+        }
+        .btn-predict {
+            padding: 14px 40px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            border-radius: 10px;
+            letter-spacing: 0.5px;
+            transition: all 0.4s ease;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            border: none;
+        }
+        .btn-predict:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(30, 60, 114, 0.4);
+            background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+        }
+        
+        /* Custom Radio Buttons */
+        .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 5px;
+        }
+        .form-check-label {
+            font-size: 0.95rem;
+            color: #495057;
+            cursor: pointer;
+        }
+        .form-check-input:checked {
+            background-color: #2a5298;
+            border-color: #2a5298;
+        }
+        
+        /* Prediction Result Box */
+        #predictionResult {
+            display: none; 
+        }
+        .progress-bar-animated {
+            transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .spinner-border {
+            display: none;
+            width: 1.2rem;
+            height: 1.2rem;
+            border-width: 0.2em;
+        }
+        .loading .spinner-border {
+            display: inline-block;
+        }
+        .loading .btn-icon {
+            display: none;
+        }
+        
+        /* Footer */
+        .footer {
+            margin-top: auto;
+            background-color: #1e3c72;
+            color: rgba(255,255,255,0.8);
+            padding: 2rem 0;
+            text-align: center;
+        }
+        .footer a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-section text-center">
+        <div class="container">
+            <h1 class="display-4 fw-bold mb-3"><i class="fa-solid fa-network-wired me-3"></i>HR Analytics Dashboard</h1>
+            <p class="lead mb-4">Intelligent Employee Attrition Prediction System</p>
+            <div class="tech-badges">
+                <span class="badge rounded-pill"><i class="fa-brands fa-python me-1"></i>Flask</span>
+                <span class="badge rounded-pill"><i class="fa-solid fa-brain me-1"></i>Scikit-Learn</span>
+                <span class="badge rounded-pill"><i class="fa-solid fa-bolt me-1"></i>XGBoost</span>
+                <span class="badge rounded-pill"><i class="fa-solid fa-cat me-1"></i>CatBoost</span>
+                <span class="badge rounded-pill"><i class="fa-brands fa-bootstrap me-1"></i>Bootstrap 5</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+        
+        <!-- Prediction Display Section (Populated via JS) -->
+        <div id="predictionResult" class="row justify-content-center mb-5">
+            <div class="col-lg-8">
+                <div class="card shadow border-0" id="resultCard">
+                    <div class="card-body text-center p-5">
+                        <h2 id="resultTitle" class="fw-bold mb-4"></h2>
+                        <h5 class="text-muted mb-3">Model Confidence: <span id="confidenceText" class="fw-bold text-dark fs-4"></span></h5>
+                        <div class="progress mb-4" style="height: 16px; border-radius: 10px; background-color: #e9ecef;">
+                            <div id="confidenceBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <div class="alert alert-secondary mb-0 text-start" role="alert">
+                            <i class="fa-solid fa-circle-info me-2"></i><strong>Disclaimer:</strong> This prediction is generated by a machine learning model and should be used as decision support rather than a final HR decision.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-light border shadow-sm mb-4" role="alert">
+            <i class="fa-solid fa-asterisk text-danger me-2"></i> <span class="text-muted fw-semibold">indicates required fields</span>
+        </div>
+
+        <form action="{{ url_for('predict') }}" method="POST" id="attritionForm" autocomplete="on">
+            <div class="row">
+                
+                <!-- 1. Personal Information -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header"><i class="fa-solid fa-user me-2"></i>Personal Information</div>
+                        <div class="card-body row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Age <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" name="Age" placeholder="Enter Age" required min="18" max="80">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Distance From Home <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" name="Distance From Home" placeholder="Enter Distance" required min="1" max="29">
+                            </div>
+                            
+                            <div class="col-md-12 mt-3">
+                                <label class="form-label">Gender <span class="text-danger">*</span></label>
+                                <div class="radio-group">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="Gender" id="Male" value="Male" required>
+                                        <label class="form-check-label" for="Male">Male</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="Gender" id="Female" value="Female" required>
+                                        <label class="form-check-label" for="Female">Female</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-12 mt-3">
+                                <label class="form-label">Marital Status <span class="text-danger">*</span></label>
+                                <div class="radio-group">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="Marital Status" id="Married" value="Married" required>
+                                        <label class="form-check-label" for="Married">Married</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="Marital Status" id="Single" value="Single" required>
+                                        <label class="form-check-label" for="Single">Single</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="Marital Status" id="Divorced" value="Divorced" required>
+                                        <label class="form-check-label" for="Divorced">Divorced</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">Education <span class="text-danger">*</span></label>
+                                <select class="form-select" name="Education" required>
+                                    <option value="" disabled selected>Select Level...</option>
+                                    <option value="1">1 - Below College</option>
+                                    <option value="2">2 - College</option>
+                                    <option value="3">3 - Bachelor</option>
+                                    <option value="4">4 - Master</option>
+                                    <option value="5">5 - Doctor</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">Education Field <span class="text-danger">*</span></label>
+                                <select class="form-select" name="Education Field" required>
+                                    <option value="" disabled selected>Select Field...</option>
+                                    <option value="Life Sciences">Life Sciences</option>
+                                    <option value="Medical">Medical</option>
+                                    <option value="Marketing">Marketing</option>
+                                    <option value="Technical Degree">Technical Degree</option>
+                                    <option value="Human Resources">Human Resources</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Job Information -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header"><i class="fa-solid fa-briefcase me-2"></i>Job Information</div>
+                        <div class="card-body row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Department <span class="text-danger">*</span></label>
+                                <div class="radio-group">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="Department" id="DeptRD" value="Research & Development" required>
+                                        <label class="form-check-label" for="DeptRD">Research & Development</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="Department" id="DeptSales" value="Sales" required>
+                                        <label class="form-check-label" for="DeptSales">Sales</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="Department" id="DeptHR" value="Human Resources" required>
+                                        <label class="form-check-label" for="DeptHR">Human Resources</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">Job Role <span class="text-danger">*</span></label>
+                                <select class="form-select" name="Job Role" required>
+                                    <option value="" disabled selected>Select Role...</option>
+                                    <option value="Sales Executives">Sales Executive</option>
+                                    <option value="Research Scientist">Research Scientist</option>
+                                    <option value="Laboratory Technician">Laboratory Technician</option>
+                                    <option value="Manufacturing Director">Manufacturing Director</option>
+                                    <option value="Healthcare Representative">Healthcare Representative</option>
+                                    <option value="Manager">Manager</option>
+                                    <option value="Sales Representative">Sales Representative</option>
+                                    <option value="Research Director">Research Director</option>
+                                    <option value="Human Resources">Human Resources</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">Job Level <span class="text-danger">*</span></label>
+                                <select class="form-select" name="Job Level" required>
+                                    <option value="" disabled selected>Select Level...</option>
+                                    <option value="1">1 - Entry Level</option>
+                                    <option value="2">2 - Junior</option>
+                                    <option value="3">3 - Mid Level</option>
+                                    <option value="4">4 - Senior</option>
+                                    <option value="5">5 - Executive</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">Business Travel <span class="text-danger">*</span></label>
+                                <select class="form-select" name="BusinessTravel" required>
+                                    <option value="" disabled selected>Select frequency...</option>
+                                    <option value="Rarely">Rarely</option>
+                                    <option value="Frequently">Frequently</option>
+                                    <option value="No Travel">No Travel</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">Over Time <span class="text-danger">*</span></label>
+                                <div class="radio-group mt-1">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="Over Time" id="OTYes" value="Yes" required>
+                                        <label class="form-check-label" for="OTYes">Yes</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="Over Time" id="OTNo" value="No" required>
+                                        <label class="form-check-label" for="OTNo">No</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Compensation -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header"><i class="fa-solid fa-money-bill-wave me-2"></i>Compensation</div>
+                        <div class="card-body row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Monthly Income <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-dollar-sign"></i></span>
+                                    <input type="number" class="form-control" name="Monthly Income" placeholder="Enter Income" required min="1000" max="20000">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Stock Option Level <span class="text-danger">*</span></label>
+                                <select class="form-select" name="Stock Option Level" required>
+                                    <option value="" disabled selected>Select Level...</option>
+                                    <option value="0">0 - None</option>
+                                    <option value="1">1 - Low</option>
+                                    <option value="2">2 - Medium</option>
+                                    <option value="3">3 - High</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">Daily Rate <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-dollar-sign"></i></span>
+                                    <input type="number" class="form-control" name="Daily Rate" placeholder="Enter Rate" required min="100" max="1600">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">Hourly Rate <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-dollar-sign"></i></span>
+                                    <input type="number" class="form-control" name="Hourly Rate" placeholder="Enter Rate" required min="30" max="100">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Experience -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header"><i class="fa-solid fa-chart-line me-2"></i>Experience</div>
+                        <div class="card-body row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Total Work Years <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" name="Total Working Years" placeholder="Enter Years" required min="0" max="40">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Years At Company <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" name="Years At Company" placeholder="Enter Years" required min="0" max="40">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Years In Role <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" name="Years In Current Role" placeholder="Enter Years" required min="0" max="18">
+                            </div>
+                            <div class="col-md-4 mt-3">
+                                <label class="form-label">Years Since Promo <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" name="Years Since Last Promotion" placeholder="Enter Years" required min="0" max="15">
+                            </div>
+                            <div class="col-md-4 mt-3">
+                                <label class="form-label">Years w/ Manager <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" name="Years With Curr Manager" placeholder="Enter Years" required min="0" max="17">
+                            </div>
+                            <div class="col-md-4 mt-3">
+                                <label class="form-label">Num Companies <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" name="Number of Companies Worked in" placeholder="Enter Number" required min="0" max="9">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Satisfaction & Performance -->
+                <div class="col-lg-12 mb-4">
+                    <div class="card">
+                        <div class="card-header"><i class="fa-solid fa-face-smile me-2"></i>Satisfaction & Performance Metrics</div>
+                        <div class="card-body row g-4">
+                            <div class="col-md-3">
+                                <label class="form-label">Job Satisfaction <span class="text-danger">*</span></label>
+                                <select class="form-select" name="Job Satisfaction" required>
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="1">1 - Low</option>
+                                    <option value="2">2 - Medium</option>
+                                    <option value="3">3 - High</option>
+                                    <option value="4">4 - Very High</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Environment Sat. <span class="text-danger">*</span></label>
+                                <select class="form-select" name="Environment Satisfaction" required>
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="1">1 - Low</option>
+                                    <option value="2">2 - Medium</option>
+                                    <option value="3">3 - High</option>
+                                    <option value="4">4 - Very High</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Relationship Sat. <span class="text-danger">*</span></label>
+                                <select class="form-select" name="Relationship Satisfaction" required>
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="1">1 - Low</option>
+                                    <option value="2">2 - Medium</option>
+                                    <option value="3">3 - High</option>
+                                    <option value="4">4 - Very High</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Job Involvement <span class="text-danger">*</span></label>
+                                <select class="form-select" name="Job Involvement" required>
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="1">1 - Low</option>
+                                    <option value="2">2 - Medium</option>
+                                    <option value="3">3 - High</option>
+                                    <option value="4">4 - Very High</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">Work Life Balance <span class="text-danger">*</span></label>
+                                <select class="form-select" name="Work Life Balance" required>
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="1">1 - Bad</option>
+                                    <option value="2">2 - Good</option>
+                                    <option value="3">3 - Better</option>
+                                    <option value="4">4 - Best</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Performance Rating <span class="text-danger">*</span></label>
+                                <select class="form-select" name="Performance Rating" required>
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="1">1 - Low</option>
+                                    <option value="2">2 - Good</option>
+                                    <option value="3">3 - Excellent</option>
+                                    <option value="4">4 - Outstanding</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Training Times Last Year <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" name="Training Times Last Year" placeholder="Enter Number" required min="0" max="6">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-3 mb-5">
+                <button type="submit" class="btn btn-predict text-white shadow" id="submitBtn">
+                    <span class="spinner-border text-light me-2" role="status" aria-hidden="true"></span>
+                    <i class="fa-solid fa-wand-magic-sparkles me-2 btn-icon"></i>
+                    <span class="btn-text">Predict Attrition</span>
+                </button>
+            </div>
+        </form>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <h5 class="fw-bold mb-3">Employee Attrition Prediction System</h5>
+            <p class="mb-2 text-white-50">Built with Flask, Scikit-Learn, XGBoost, CatBoost and Bootstrap</p>
+            <p class="mb-0 text-white-50"><small>Developed by <a href="#">Mahi Agrawal</a></small></p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Script to handle loading state and prediction parsing -->
+    <script>
+        // 1. Loading State
+        document.getElementById('attritionForm').addEventListener('submit', function() {
+            if(this.checkValidity()) {
+                const btn = document.getElementById('submitBtn');
+                btn.classList.add('loading');
+                btn.disabled = true;
+            }
+        });
+
+        // 2. Parse Jinja Template Prediction Text (if it exists)
+        // Jinja will render the python string here, e.g. "Employee Might Not Leave The Job (Confidence: 74.2%)"
+        const rawPrediction = `{{ prediction_text|default('', true) }}`;
+        
+        if (rawPrediction && rawPrediction.trim() !== '') {
+            const resultBox = document.getElementById('predictionResult');
+            const resultCard = document.getElementById('resultCard');
+            const resultTitle = document.getElementById('resultTitle');
+            const confidenceBar = document.getElementById('confidenceBar');
+            const confidenceText = document.getElementById('confidenceText');
+            
+            resultBox.style.display = 'flex';
+            
+            // Extract confidence percentage using Regex
+            const match = rawPrediction.match(/Confidence:\s*([\d.]+)%/);
+            let confidenceValue = 0;
+            if (match) {
+                confidenceValue = parseFloat(match[1]);
+                confidenceText.innerText = match[1] + '%';
+            } else {
+                confidenceText.innerText = "N/A";
+            }
+            
+            // Trigger progress bar animation after a short delay for visual effect
+            setTimeout(() => {
+                confidenceBar.style.width = confidenceValue + '%';
+            }, 300);
+
+            // Determine Stay/Leave styling
+            if (rawPrediction.includes('Not Leave')) {
+                resultTitle.innerHTML = '🟢 Employee likely to stay';
+                resultTitle.className = 'fw-bold mb-3 text-success';
+                resultCard.classList.add('border-success', 'border-2');
+                confidenceBar.classList.add('bg-success');
+            } else if (rawPrediction.includes('Leave')) {
+                resultTitle.innerHTML = '🔴 Employee likely to leave';
+                resultTitle.className = 'fw-bold mb-3 text-danger';
+                resultCard.classList.add('border-danger', 'border-2');
+                confidenceBar.classList.add('bg-danger');
+            } else {
+                resultTitle.innerHTML = 'Prediction Error';
+            }
+            
+            // Scroll smoothly to result
+            resultBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    </script>
+</body>
+</html>
