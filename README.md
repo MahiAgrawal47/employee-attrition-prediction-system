@@ -132,14 +132,6 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Download Dataset
-
-Download the IBM HR Analytics Employee Attrition dataset from Kaggle and place it inside:
-
-```text
-data/
-```
-
 ### Train Model
 
 ```bash
