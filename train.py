@@ -269,7 +269,7 @@ def main():
     best_name = best_metrics["Model"]
     print(f"        Best model: {best_name} (ROC-AUC = {best_metrics['ROC-AUC']:.4f})")
 
-     Rebuild the best pipeline and fit on full training data
+    # Rebuild the best pipeline and fit on full training data
     best_model = candidate_models[best_name]
     best_pipeline = Pipeline([
         ("feature_engineer", FeatureEngineer()),

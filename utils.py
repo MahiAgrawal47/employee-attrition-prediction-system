@@ -1,6 +1,5 @@
 
 
-import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
@@ -45,25 +44,7 @@ COLUMNS_TO_DROP_FROM_RAW = [
     "PercentSalaryHike",
 ]
 
-BOOLEAN_FEATURE_RULES = [
-    ("Age",                     "Age_bool",                     "<",  35),
-    ("DailyRate",               "DailyRate_bool",               "<",  800),
-    ("DistanceFromHome",        "DistanceFromHome_bool",        ">",  10),
-    ("HourlyRate",              "HourlyRate_bool",              "<",  65),
-    ("MonthlyIncome",           "MonthlyIncome_bool",           "<",  4000),
-    ("NumCompaniesWorked",      "NumCompaniesWorked_bool",      ">",  3),
-    ("TotalWorkingYears",       "TotalWorkingYears_bool",       "<",  8),
-    ("YearsAtCompany",          "YearsAtCompany_bool",          "<",  3),
-    ("YearsInCurrentRole",      "YearsInCurrentRole_bool",      "<",  3),
-    ("YearsSinceLastPromotion", "YearsSinceLastPromotion_bool", "<",  1),
-    ("YearsWithCurrManager",    "YearsWithCurrManager_bool",    "<",  1),
-]
 
-
-STRING_BOOLEAN_RULES = [
-    ("Department", "Department_bool", "==", "Research & Development"),
-    ("JobRole",    "JobRole_bool",    "==", "Laboratory Technician"),
-]
 
 
 SATISFACTION_COLUMNS = [
@@ -77,9 +58,11 @@ SATISFACTION_COLUMNS = [
 
 CATEGORICAL_FEATURES = [
     "BusinessTravel",
+    "Department",
     "Education",
     "EducationField",
     "Gender",
+    "JobRole",
     "MaritalStatus",
     "OverTime",
     "StockOptionLevel",
@@ -88,36 +71,25 @@ CATEGORICAL_FEATURES = [
 
 
 NUMERICAL_FEATURES = [
+    "Age",
+    "DailyRate",
+    "DistanceFromHome",
+    "HourlyRate",
+    "JobLevel",
+    "MonthlyIncome",
+    "NumCompaniesWorked",
     "PerformanceRating",
-    "Total_Satisfaction_bool",
-    "Age_bool",
-    "DailyRate_bool",
-    "Department_bool",
-    "DistanceFromHome_bool",
-    "JobRole_bool",
-    "HourlyRate_bool",
-    "MonthlyIncome_bool",
-    "NumCompaniesWorked_bool",
-    "TotalWorkingYears_bool",
-    "YearsAtCompany_bool",
-    "YearsInCurrentRole_bool",
-    "YearsSinceLastPromotion_bool",
-    "YearsWithCurrManager_bool",
+    "TotalWorkingYears",
+    "YearsAtCompany",
+    "YearsInCurrentRole",
+    "YearsSinceLastPromotion",
+    "YearsWithCurrManager",
+    "Total_Satisfaction",
 ]
 
 
 
-def _apply_comparison(series: pd.Series, comparator: str, threshold) -> pd.Series:
-    """Apply a comparison operator to a pandas Series."""
-    ops = {
-        "<":  lambda s, t: (s < t).astype(int),
-        ">":  lambda s, t: (s > t).astype(int),
-        ">=": lambda s, t: (s >= t).astype(int),
-        "<=": lambda s, t: (s <= t).astype(int),
-        "==": lambda s, t: (s == t).astype(int),
-        "!=": lambda s, t: (s != t).astype(int),
-    }
-    return ops[comparator](series, threshold)
+
 
 
 
@@ -144,22 +116,7 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
             df["Total_Satisfaction"] = (
                 df[satisfaction_cols_present].sum(axis=1) / len(satisfaction_cols_present)
             )
-            df["Total_Satisfaction_bool"] = (
-                df["Total_Satisfaction"].ge(2.8).astype(int)
-            )
-            df = df.drop(columns=satisfaction_cols_present + ["Total_Satisfaction"])
-
-        
-        for src, dst, comp, thresh in BOOLEAN_FEATURE_RULES:
-            if src in df.columns:
-                df[dst] = _apply_comparison(df[src], comp, thresh)
-                df = df.drop(columns=[src])
-
-        
-        for src, dst, comp, value in STRING_BOOLEAN_RULES:
-            if src in df.columns:
-                df[dst] = _apply_comparison(df[src], comp, value)
-                df = df.drop(columns=[src])
+            df = df.drop(columns=satisfaction_cols_present)
 
         
         for col in CATEGORICAL_FEATURES:
