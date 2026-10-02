@@ -66,7 +66,7 @@ The application compares multiple machine learning models, automatically selects
 | Visualization | Matplotlib |
 | Serialization | Joblib |
 | Frontend | HTML, CSS, Bootstrap |
-| Deployment | Gunicorn, Heroku |
+
 
 ---
 
@@ -80,7 +80,6 @@ Employee-Attrition-Prediction/
 ├── utils.py
 ├── pipeline.pkl
 ├── requirements.txt
-├── Procfile
 ├── README.md
 ├── LICENSE
 ├── SECURITY.md
@@ -98,66 +97,7 @@ Employee-Attrition-Prediction/
 
 ---
 
-# Installation
 
-### Clone Repository
-
-```bash
-git clone https://github.com/MahiAgrawal47/employee-attrition-prediction-system.git
-
-cd Employee-Attrition-Prediction
-```
-
-### Create Virtual Environment
-
-```bash
-python -m venv venv
-```
-
-Windows
-
-```bash
-venv\Scripts\activate
-```
-
-Linux / macOS
-
-```bash
-source venv/bin/activate
-```
-
-### Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### Train Model
-
-```bash
-python train.py
-```
-
-Training will:
-
-- Compare multiple models
-- Evaluate performance
-- Save the best model as `pipeline.pkl`
-- Generate Feature Importance visualization
-
-### Run Application
-
-```bash
-python app.py
-```
-
-Open
-
-```
-http://localhost:5000
-```
-
----
 
 # Usage
 
@@ -170,27 +110,28 @@ http://localhost:5000
 
 # Model Performance
 
-The project trains and compares multiple machine learning models and automatically selects the best-performing model based on the **ROC-AUC** score.
+The project compares multiple machine learning models using **5-fold Stratified Cross-Validation** on the training data and selects the best model based on the mean **ROC-AUC** score.
 
-| Model | Accuracy | Precision | Recall | F1-Score | ROC-AUC |
-|--------|----------|-----------|--------|----------|----------|
-| Logistic Regression | **78.57%** | **39.74%** | **65.96%** | **49.60%** | **79.97%** |
-| Random Forest | 82.31% | 43.24% | 34.04% | 38.10% | 78.76% |
-| XGBoost | 80.61% | 35.29% | 25.53% | 29.63% | 74.75% |
-| CatBoost | 81.63% | 41.86% | 38.30% | 40.00% | 73.61% |
+| Model | CV ROC-AUC |
+|--------|------------|
+| **Logistic Regression** | **82.65%** |
+| Random Forest | 82.38% |
+| CatBoost | 82.14% |
+| XGBoost | 80.75% |
 
 ### Best Model
 
-**Logistic Regression** achieved the highest **ROC-AUC score (79.97%)** and was automatically selected as the final model for deployment.
+**Logistic Regression** achieved the highest mean **CV ROC-AUC of 82.65%** and was selected as the final model.
 
-**Final Model Performance:**
+### Final Test-Set Performance
 
-- **Accuracy:** 78.57%
-- **Precision:** 39.74%
-- **Recall:** 65.96%
-- **F1-Score:** 49.60%
-- **ROC-AUC:** 79.97%
-
+| Metric | Score |
+|--------|-------|
+| Accuracy | **76.87%** |
+| Precision | **37.65%** |
+| Recall | **68.09%** |
+| F1-Score | **48.48%** |
+| ROC-AUC | **80.39%** |
 ---
 
 # Screenshots
