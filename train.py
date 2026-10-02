@@ -221,53 +221,39 @@ def main():
     )
 
     
-    print("\n  [4/6] Training and comparing models ...\n")
+    print("\n  [4/7] Comparing models via 5-fold Stratified CV (training data only) ...\n")
     candidate_models = _get_candidate_models(y_train)
-    all_metrics = []
-    
+    cv_results = []  # list of {"Model": name, "CV-ROC-AUC": mean_score}
+
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
 
     for name, model in candidate_models.items():
-        print(f"    Training {name} ...")
+        print(f"    Cross-validating {name} ...")
         pipeline = Pipeline([
             ("feature_engineer", FeatureEngineer()),
             ("preprocessor", preprocessor),
             ("model", model),
         ])
-        
-        
+
         cv_scores = cross_val_score(pipeline, X_train, y_train, cv=skf, scoring="roc_auc")
         cv_mean = cv_scores.mean()
-        
-        pipeline.fit(X_train, y_train)
+        cv_std = cv_scores.std()
+        cv_results.append({"Model": name, "CV-ROC-AUC": cv_mean})
+        print(f"      → CV ROC-AUC: {cv_mean:.4f} (±{cv_std:.4f})")
 
-        metrics, y_pred = evaluate_model(pipeline, X_test, y_test, name)
-        metrics["CV-ROC-AUC"] = cv_mean
-        all_metrics.append(metrics)
-
-        print_detailed_report(y_test, y_pred, name)
-
-    
+    # --- CV Comparison Table ---
     print("\n" + "=" * 60)
-    print("  Model Comparison Summary")
+    print("  Model Comparison (CV ROC-AUC on Training Data Only)")
     print("=" * 60)
-    comparison_df = pd.DataFrame(all_metrics)
-    comparison_df = comparison_df.set_index("Model")
-    # Format as percentages
-    for col in comparison_df.columns:
-        comparison_df[col] = comparison_df[col].apply(
-            lambda x: f"{x:.4f}" if x is not None else "N/A"
-        )
+    comparison_df = pd.DataFrame(cv_results).set_index("Model")
+    comparison_df["CV-ROC-AUC"] = comparison_df["CV-ROC-AUC"].apply(lambda x: f"{x:.4f}")
     print(f"\n{comparison_df.to_string()}\n")
 
-    
-    print("\n  [5/6] Selecting best model (by ROC-AUC) ...")
-    best_metrics = max(
-        all_metrics,
-        key=lambda m: m["ROC-AUC"] if m["ROC-AUC"] is not None else 0,
-    )
-    best_name = best_metrics["Model"]
-    print(f"        Best model: {best_name} (ROC-AUC = {best_metrics['ROC-AUC']:.4f})")
+    # --- Select best model by mean CV ROC-AUC ---
+    print("  [5/7] Selecting best model (by mean CV ROC-AUC) ...")
+    best_entry = max(cv_results, key=lambda m: m["CV-ROC-AUC"])
+    best_name = best_entry["Model"]
+    print(f"        Best model: {best_name} (CV ROC-AUC = {best_entry['CV-ROC-AUC']:.4f})")
 
     # Rebuild the best pipeline and fit on full training data
     best_model = candidate_models[best_name]
@@ -284,11 +270,21 @@ def main():
     ])
     best_pipeline.fit(X_train, y_train)
 
-   
+    # --- Single final evaluation on the untouched test set ---
+    print(f"\n  [6/7] Evaluating {best_name} on the held-out test set ...")
+    metrics, y_pred = evaluate_model(best_pipeline, X_test, y_test, best_name)
+    print_detailed_report(y_test, y_pred, best_name)
+
+    print("\n" + "=" * 60)
+    print(f"  Final Test-Set Performance — {best_name}")
+    print("=" * 60)
+    for metric_name in ("Accuracy", "Precision", "Recall", "F1-Score", "ROC-AUC"):
+        val = metrics[metric_name]
+        print(f"    {metric_name:12s}: {val:.4f}" if val is not None else f"    {metric_name:12s}: N/A")
+
     plot_feature_importance(best_pipeline, top_n=20)
 
-    
-    print(f"\n  [6/6] Saving pipeline to {PIPELINE_PATH.name} ...")
+    print(f"\n  [7/7] Saving pipeline to {PIPELINE_PATH.name} ...")
     joblib.dump(best_pipeline, PIPELINE_PATH)
     print(f"        Pipeline saved successfully ({PIPELINE_PATH.stat().st_size / 1024:.1f} KB)")
 
@@ -299,3 +295,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
